@@ -1,0 +1,39 @@
+---
+title: 'Processing: Longline Data'
+output: html_document
+---
+## Setup
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# packages
+library(tidyverse)
+
+# longline data
+longline_full <- read.csv("/Users/cristiana/Documents/R/GeospatialR/Practice Data/drifting_longlines_small/Sheet 1-Table 1.csv")
+```
+
+## Data exploration
+```{r cars}
+str(longline_full)
+head(longline_full)
+
+# how many individual vessels are included in this dataset
+unique(longline_full$mmsi)
+class(longline_full$mmsi)
+longline_full$mmsi <- as.factor(longline_full$mmsi)
+# there are two vessels in this dataset
+# how many records (location points) does each vessel have
+nrow(longline_full)
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
