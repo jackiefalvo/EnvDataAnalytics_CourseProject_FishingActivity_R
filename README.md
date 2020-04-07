@@ -20,37 +20,39 @@ fishing, global fishing watch, longline, regression model, tidyverse, statistics
 ## Folder structure, file formats, and naming conventions 
 
 The following folders are included in this repository:
-Data: contains folders for raw and processed data
-Code: contains separate R scripts for each stage of the general processing (data processing, data analysis)
-Output: contains outputs from analysis including charts, graphs and statistics
+-Data: contains folders for raw and processed data
+-Code: contains separate R scripts for each stage of the general processing (data processing, data analysis)
+-Output: contains outputs from analysis including charts, graphs and statistics
 
 ## Database Information
 
 Longline fishing data: 
-CSV data 
-Downloaded from https://globalfishingwatch.org/data-download/datasets/public-training-data-v1 
-Downloaded on March 25, 2020
+-CSV data 
+-Downloaded from https://globalfishingwatch.org/data-download/datasets/public-training-data-v1 
+-Downloaded on March 25, 2020
 
 ## Scripts and code
 
 Within the 'Code' folder:
-Processing_LonglineData: this script reads in the raw longline CSV data, explores it, and processes it for analysis preparation. Full documentation is included as comments in the code. 
+-Processing_LonglineData: this script reads in the raw longline CSV data, explores it, and processes it for analysis preparation. Full documentation is included as comments in the code. 
 
 ## Metadata
 
 Longline.csv
-mmsi: Anonymized vessel identifier
-timestamp: Unix timestamp
-distance_from_shore: Distance from shore (meters)
-distance_from_port: Distance from port (meters)
-speed: Vessel speed (knots)
-lat: Latitude in decimal degrees
-lon: Longitude in decimal degrees
-is_fishing: Label indicating fishing activity.
-0 = Not fishing
-1 = Fishing. Data values between 0 and 1 indicate the average score for the position if scored by multiple people.
+-mmsi: Anonymized vessel identifier
+-timestamp: Unix timestamp
+-distance_from_shore: Distance from shore (meters)
+-distance_from_port: Distance from port (meters)
+-speed: Vessel speed (knots)
+-lat: Latitude in decimal degrees
+-lon: Longitude in decimal degrees
+-is_fishing: Label indicating fishing activity.
+--0 = Not fishing
+--1 = Fishing. Data values between 0 and 1 indicate the average score for the position if scored by multiple people.
 
 ## Quality assurance/quality control
+
+<detailed methods and QA/QC process will be updated iteratively as project progresses>
 
 <describe any relevant QA/QC procedures taken with your data. Some ideas can be found here:>
 <https://www.dataone.org/best-practices/develop-quality-assurance-and-quality-control-plan>
