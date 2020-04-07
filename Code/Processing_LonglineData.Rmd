@@ -8,9 +8,16 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # packages
 library(tidyverse)
+library(here)
+
+# working directory
+here()
 
 # longline data
 longline_full <- read.csv("/Users/cristiana/Documents/R/GeospatialR/Practice Data/drifting_longlines_small/Sheet 1-Table 1.csv")
+
+# preserve raw data
+## write.csv(longline_full, here("Data", "Raw", "Longline_full"))
 ```
 
 ## Data exploration
@@ -27,6 +34,73 @@ longline_full$mmsi <- as.factor(longline_full$mmsi)
 nrow(longline_full)
 
 ```
+## Processing Data
+```{r}
+# select desired fields
+  # eliminated 'course' and 'source' because I don't expect them to be as useful predictor variables, now I'm left with 8 columns
+longline_select <- 
+  select(longline_full, mmsi, timestamp, distance_from_shore, distance_from_port,
+         speed, lat, lon, is_fishing) 
+
+# dictate fields with 'factor' data types
+longline_select$mmsi <- as.factor(longline_select$mmsi)
+longline_select$is_fishing <- as.factor(longline_select$is_fishing)
+
+str(longline_select)
+
+# is_fishing field: 0's = unknown, how many 0's, 1's and -1's do we have (out of 65,499 rows)
+count(longline_select, longline_select$is_fishing == 0) # 1,397 'not fishing' statuses (2.13%)
+count(longline_select, longline_select$is_fishing == 1) # 2,792 'fishing' statuses (4.26%)
+count(longline_select, longline_select$is_fishing == -1) # 61,310 'no data' statuses (93.6%)
+
+# percentages
+1397/65499 # zeros
+2792/65499 # fishing
+61310/65499 # not fishing
+
+str(longline_select)
+
+```
+
+```{r}
+## clean up is_fishing field
+# I will eliminate records with zero (unknown) value in is_fishing field because I want to see how well different variables predict a binary condition of fishing or not fishing
+
+# first, change field values to numbers so I can use values in filter function
+
+
+longline_select_fishing <- 
+  select(longline_select, mmsi, timestamp, distance_from_shore, distance_from_port, speed, lat, lon, is_fishing) 
+
+str(longline_select_fishing)
+
+
+```
+## Exploration and processing notes
+
+> general stats question <
+  # to have only 4% of our cases be fishing and the other 93% be not fishing..
+  how effective is our model going to be?
+
+> potential model questions <
+  # how does speed correlate with fishing vs not fishing
+  # look spatially at where the vessels are fishing
+  # look at what times vessels are fishing
+    # what types of gaps are possible in getting 'fishing' data
+        # based on data collection/algorithm - how does it mark 'fishing'
+        # are there constraints on when/what time data is collected? cloud cover, etc.?
+
+> ways to further organize data
+  # eliminate unknown cases to just have binary (fishing, not fishing)
+  # group_by(vessel, is_fishing)
+  # visualize where vessels are fishing, where vessels are not fishing
+  
+> ways to organize report
+  # new code chunk every time I make a new data frame?
+  # new data frame every time I change the fields significantly?
+  # new markdown section every time I'm explaining the next step
+  # each script is one big task in the project (e.g., processing longline data is all in one script,
+  processing additional csv data will be in a separate script to keep everything clean)
 
 ## Including Plots
 
