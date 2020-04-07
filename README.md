@@ -20,16 +20,16 @@ fishing, global fishing watch, longline, regression model, tidyverse, statistics
 ## Folder structure, file formats, and naming conventions 
 
 The following folders are included in this repository:
--Data: contains folders for raw and processed data
--Code: contains separate R scripts for each stage of the general processing (data processing, data analysis)
--Output: contains outputs from analysis including charts, graphs and statistics
+- Data: contains folders for raw and processed data
+- Code: contains separate R scripts for each stage of the general processing (data processing, data analysis)
+- Output: contains outputs from analysis including charts, graphs and statistics
 
 ## Database Information
 
 Longline fishing data: 
--CSV data 
--Downloaded from https://globalfishingwatch.org/data-download/datasets/public-training-data-v1 
--Downloaded on March 25, 2020
+- CSV data 
+- Downloaded from https://globalfishingwatch.org/data-download/datasets/public-training-data-v1 
+- Downloaded on March 25, 2020
 
 ## Scripts and code
 
@@ -39,16 +39,16 @@ Within the 'Code' folder:
 ## Metadata
 
 Longline.csv
--mmsi: Anonymized vessel identifier
--timestamp: Unix timestamp
--distance_from_shore: Distance from shore (meters)
--distance_from_port: Distance from port (meters)
--speed: Vessel speed (knots)
--lat: Latitude in decimal degrees
--lon: Longitude in decimal degrees
--is_fishing: Label indicating fishing activity.
---0 = Not fishing
---1 = Fishing. Data values between 0 and 1 indicate the average score for the position if scored by multiple people.
+- mmsi: Anonymized vessel identifier
+- timestamp: Unix timestamp
+- distance_from_shore: Distance from shore (meters)
+- distance_from_port: Distance from port (meters)
+- speed: Vessel speed (knots)
+- lat: Latitude in decimal degrees
+- lon: Longitude in decimal degrees
+- is_fishing: Label indicating fishing activity.
+-- 0 = Not fishing
+-- 1 = Fishing. Data values between 0 and 1 indicate the average score for the position if scored by multiple people.
 
 ## Quality assurance/quality control
 
