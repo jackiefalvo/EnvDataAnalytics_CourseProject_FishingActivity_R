@@ -1,5 +1,5 @@
 ---
-title: 'Processing: Longline Data'
+title: 'Wrangling: Longline Data'
 output: html_document
 ---
 ## Setup
@@ -78,6 +78,25 @@ anydate(1327136504)
 
 longline_fishing_recode <- mutate(longline_fishing, date = anytime(longline_fishing$timestamp))
 
+```
+## Organize and save processed data
+```{r}
+colnames(longline_fishing_recode)
+
+# reorder and rename data frame columns
+longline_processed <- 
+  select(longline_fishing_recode, mmsi, date, lat, lon, speed, distance_from_shore, distance_from_port, is_fishing)
+
+# separate date and time columns
+longline_processed %>% separate(date, c("Date", "Time"), " ")
+
+
+class(longline_processed$date)
+longline_processed$date <- as.Date(longline_processed$date, format = "%Y-%M-%D%H:%M:%S")
+
+colnames(longline_processed)[1] <- ("Vessel")
+colnames(longline_processed)[1] <- ("Vessel")
+   
 ```
 
 ## Exploration and processing notes
