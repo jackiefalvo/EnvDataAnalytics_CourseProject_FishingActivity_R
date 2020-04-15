@@ -34,21 +34,34 @@ Longline fishing data:
 ## Scripts and code
 
 Within the 'Code' folder:
--Processing_LonglineData: this script reads in the raw longline CSV data, explores it, and processes it for analysis preparation. Full documentation is included as comments in the code. 
+- Wrangling_LonglineData: this script brings the raw data into R for some initial data frame exploration and cleaning. The script transforms the raw longline data to processed longline data by filtering and reformatting columns in order to prepare the data for analysis. More detailed documentation is included throughout the script. 
 
 ## Metadata
 
 Longline.csv
 - mmsi: Anonymized vessel identifier
-- timestamp: Unix timestamp
-- distance_from_shore: Distance from shore (meters)
-- distance_from_port: Distance from port (meters)
+  + Values:
+    - Vessel 1
+    - Vessel 2
+- Date: Date (YYYY-MM-DD)
+  + Date range: 2012-06-02 through 2013-12-31
+- Time: Time (H:M:S)
+  + Time range: 00:00:38 - 23:59:51
+    - 24 hour time format
+- lat: Latitude (decimal degrees)
+  + Range: 	7.855130 - 59.72647
+- lon: Longitude (decimal degrees)
+  + Range: 	-178.3234 - -8.751204
 - speed: Vessel speed (knots)
-- lat: Latitude in decimal degrees
-- lon: Longitude in decimal degrees
+  + Range: 0.0 - 14.4  
+- distance_from_shore: Distance from shore (meters)
+  + Range: 0 - 1207965.9
+- distance_from_port: Distance from port (meters)
+  + Range: 0 - 1238047.1
 - is_fishing: Label indicating fishing activity.
--- 0 = Not fishing
--- 1 = Fishing. Data values between 0 and 1 indicate the average score for the position if scored by multiple people.
+  + Values:
+    - 0 = Not fishing
+    - 1 = Fishing
 
 ## Quality assurance/quality control
 
