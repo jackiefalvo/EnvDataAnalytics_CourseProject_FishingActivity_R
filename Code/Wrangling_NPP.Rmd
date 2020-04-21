@@ -1,0 +1,48 @@
+---
+title: "Wrangling_NPP"
+output: html_document
+task: 
+---
+
+```{r}
+# packages
+library(tidyverse)
+library(here)
+
+# bring in raw npp data and processed longline data
+here()
+npp <- read.csv(here("Data", "Raw", "SESYNC_NPP.csv"))
+longline <- read.csv(here("Data", "Processed", "Longline_Processed.csv"))
+
+# tasks:
+  # add field called 'X' to npp data frame, number it 1 - 4189, use that to join npp data to longline
+  # rename columns
+  # get rid of distance from port
+  
+  ## make combined processed dataset
+```
+
+# Add ID field to NPP data then join NPP data to processed longline data
+```{r}
+# add ID column to npp data
+npp_ID <- tibble::rowid_to_column(npp, "ID")
+  
+# join npp data to longline data by ID
+combined <- left_join(longline, npp_ID,
+                      by = c("X" = "ID"))
+
+# select and rename columns for processed data to use for analysis
+str(combined)  
+
+processed_LonglineNPP <- select(combined, X, mmsi, Date, Time, lat.x, long.x, speed, distance_from_shore, npp_mean, is_fishing)
+
+colnames(processed_LonglineNPP) <- c("ID", "MMSI", "Date", "Time", "Latitude", "Longitude", "Vessel_Speed", "Distance_From_Shore", "NPP_Mean", "Fishing_Activity")
+
+write.csv(processed_LonglineNPP, here("Data", "Processed", "Combined_LonglineNPP_Processed.csv"))
+```
+
+
+
+
+
+

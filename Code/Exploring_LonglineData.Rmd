@@ -1,0 +1,159 @@
+---
+title: "Exploration_LonglineData"
+output: html_document
+---
+
+```{r}
+# mapping
+library(mapview)
+library(here)
+library(viridis)
+
+# sstats
+# require(plyr)
+library(tidyverse)
+library(nlme)
+library(piecewiseSEM)
+# to visualize linear reg
+require(ggiraph)
+require(ggiraphExtra)
+
+# data
+here()
+combined_data <- read.csv(here("Data", "Processed", "Combined_LonglineNPP_Processed.csv"))
+```
+# View combined data on map
+```{r}
+mapview(combined_data, xcol = "Longitude", ycol = "Latitude", crs = 4326, grid = FALSE)
+```
+
+
+# Explore vessel 1
+```{r}
+# assign variables
+vessel1 <- filter(combined_data, combined_data$MMSI == "Vessel 1")
+vessel1_fishing <- filter(vessel1, vessel1$Fishing_Activity == 1)
+
+vessel1_map <- mapview(vessel1, xcol = "Longitude", ycol = "Latitude", crs = 4326, grid = FALSE)
+vessel1_map_colored <- mapview(vessel1, xcol = "Longitude", ycol = "Latitude", zcol = "Fishing_Activity", crs = 4326, grid = FALSE, legend = TRUE)
+
+vessel1_fishing_map <- mapview(vessel1_fishing, xcol = "Longitude", ycol = "Latitude", crs = 4326, grid = FALSE)
+
+```
+
+```{r}
+# view vessel 1 points
+mapview(vessel1, xcol = "Longitude", ycol = "Latitude", zcol = "NPP_Mean", crs = 4326, grid = FALSE)
+
+```
+
+```{r}
+mapview(vessel1_fishing, xcol = "Longitude", ycol = "Latitude", zcol = "Longitude", crs = 4326, grid = FALSE)
+```
+
+```{r}
+# trim by latitude
+vessel1_zoom <- filter(vessel1, vessel1$Latitude < 32)
+
+vessel1_zoom_recode <- mutate(vessel1_zoom, FishingActivity = recode(vessel1_zoom$Fishing_Activity,
+                                                                     "0" = "Not Fishing", "1" = "Fishing"))
+
+
+colnames(vessel1_zoom_recode)[12] <- ("")
+colnames(vessel1_zoom_recode)[11]
+colnames(vessel1_zoom_recode)[10] <- ("NPP(mgC/(m2Day))")
+colnames(vessel1_zoom)[10] <- ("NPP(mgC/(m2Day))")
+
+
+mapview(vessel1_zoom, xcol = "Longitude", ycol = "Latitude", crs = 4326, grid = FALSE, legend = FALSE)
+```
+
+
+```{r}
+# side by side, vessel 1 fishing : vessel 1 distance
+
+# vessel 1 by distance
+vessel1_npp_map <- mapview(vessel1_zoom, xcol = "Longitude", ycol = "Latitude", zcol = "NPP(mgC/(m2Day))", crs = 4326, grid = FALSE, legend = TRUE)
+
+vessel1_map_colored <- mapview(vessel1_zoom, xcol = "Longitude", ycol = "Latitude", zcol = "Fishing_Activity", crs = 4326, grid = FALSE, legend = TRUE)
+
+NPP_Correlation <- leafsync::latticeView(vessel1_npp_map, vessel1_map_colored, ncol = 2, sync = "none", sync.cursor = FALSE, no.initial.sync = TRUE)
+
+leafsync::latticeView(vessel1_npp_map, vessel1_map_colored, ncol = 2, sync = "none", sync.cursor = FALSE, no.initial.sync = TRUE)
+
+
+```
+
+```{r}
+# view side by side (V1)
+leafsync::latticeView(vessel1_map_colored, vessel1_fishing_map, ncol = 2, sync = "none", sync.cursor = FALSE, no.initial.sync = TRUE)
+```
+
+# Explore vessel 2
+```{r}
+# define variables
+vessel2 <- filter(combined_data, combined_data$MMSI == "Vessel 2")
+vessel2_fishing <- filter(vessel2, vessel2$Fishing_Activity == 1)
+
+vessel2_map <- mapview(vessel2, xcol = "Longitude", ycol = "Latitude", crs = 4326, grid = FALSE)
+vessel2_fishing_map <- mapview(vessel2_fishing, xcol = "Longitude", ycol = "Latitude", crs = 4326, grid = FALSE)
+
+```
+
+```{r}
+# view vessel 2 
+mapview(vessel2, xcol = "Longitude", ycol = "Latitude", zcol = "Vessel_Speed",crs = 4326, grid = FALSE)
+```
+```{r}
+# view vessel 2 fishing
+mapview(vessel2_fishing, xcol = "Longitude", ycol = "Latitude", zcol = "Distance_From_Shore", crs = 4326, grid = FALSE)
+```
+
+
+
+```{r}
+# view side by side (v2)
+latticeView(vessel2_map, vessel2_fishing_map, ncol = 2, sync = "none", sync.cursor = FALSE,
+  no.initial.sync = TRUE)
+
+```
+
+
+# Make table to summarize exploratory information
+
+#caption example
+```{r}
+caption2 <-ggplot()+
+theme(axis.line=element_blank())+
+labs(title = "White Salmon River discharge rates by month - 8 years prior to and post dam removal
+    with LOESS curve. Vertical dashed line signifies Condit Dam removal.")
+
+Monthlygridequalwcaption <- cowplot::plot_grid(
+ Monthlygridequal, caption2,
+ align ='h',
+ hjust=-1,
+nrow=2,
+ rel_heights = c(.9,.1)
+)
+ggsave("monthlygridequal.png", width = 9, height = 9, dpi=300)
+
+```
+```{r}
+NppCorr_Caption <- 
+  ggplot() +
+  theme(axis.line =  element_blank()) +
+  labs(title = "This figure shows two views of the same fishing fleet. The left panel shows the level of net primary productivity (NPP), the right panel shows which vessels are fishing and which vessels are not. We can see a positive correlation between NPP and fishing activity.")
+  
+Map_Caption <- 
+  cowplot::plot_grid(
+    NPP_Correlation, NppCorr_Caption,
+    align = 'h',
+    hjust = -1,
+    nrow = 2
+  )
+  
+view(Map_Caption)
+plot(Map_Caption)  
+  
+```
+
