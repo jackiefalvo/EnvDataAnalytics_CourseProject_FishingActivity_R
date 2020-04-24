@@ -37,7 +37,10 @@ longline_full$mmsi <- as.factor(longline_full$mmsi)
 # how many records (location points) does each vessel have ??
 nrow(longline_full)
 ```
-## Processing Data
+
+## Exploring the raw data
+### The raw longline data contains 65,499 observations. I examined the 'is_fishing' field to see how many observations were classified as 'fishing', 'not fishing', and 'unknown'. 
+### Since I am interested in modeling a binary fishing activity status ('fishing' vs. 'not fishing'), I narrowed the data to only include observations with either a 'fishing' or 'not fishing' status, leaving me with 4,189 observations.
 ```{r}
 # select desired fields
   # eliminated 'course' and 'source' because I don't expect them to be as useful predictor variables, now I'm left with 8 columns
@@ -47,9 +50,10 @@ longline_select <-
 
 
 # is_fishing field: 0's = unknown, how many 0's, 1's and -1's do we have (out of 65,499 rows)
-count(longline_select, longline_select$is_fishing == 0) # 1,397 'not fishing' statuses (2.13%)
-count(longline_select, longline_select$is_fishing == 1) # 2,792 'fishing' statuses (4.26%)
-count(longline_select, longline_select$is_fishing == -1) # 61,310 'no data' statuses (93.6%)
+
+count(longline_full, longline_full$is_fishing == 0) # 1,397 'not fishing' statuses (2.13%)
+count(longline_full, longline_full$is_fishing == 1) # 2,792 'fishing' statuses (4.26%)
+count(longline_full, longline_full$is_fishing == -1) # 61,310 'no data' statuses (93.6%)
 
 # percentages
 1397/65499 # zeros
@@ -58,11 +62,21 @@ count(longline_select, longline_select$is_fishing == -1) # 61,310 'no data' stat
 
 1397 + 2792
 ```
+# Processing Data
+## time field
+```{r}
+str(longline_select)
+
+longline_select$timestamp <- as.POSIXct(paste(longline_select$timestamp), format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+
+```
+
+
 
 ## Cleaning up fields
 ```{r}
 # Clean up is_fishing field
-  # I will eliminate records with zero (unknown) value in is_fishing field because I want to see how   well different variables predict a binary condition of fishing or not fishing
+  # I will eliminate records with zero (unknown) value in is_fishing field because I want to see howwell different variables predict a binary condition of fishing or not fishing
 longline_fishing <- filter(longline_select, is_fishing %in% c(0, 1))
 
 str(longline_fishing)

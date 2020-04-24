@@ -1,0 +1,128 @@
+---
+title: "Exploration_Mapping"
+output: html_document
+---
+# setup
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# packages
+library(tidyverse)
+library(sf)
+library(leaflet)
+library(mapview)
+library(here)
+```
+# Data
+```{r}
+# full dataset
+here()
+combined_data <- read.csv(here("Data", "Processed", "Combined_LonglineNPP_Processed.csv"))
+
+str(combined_data)
+combined_data$Date <- as.Date(combined_data$Date)
+
+# vessel 1
+vessel1 <- filter(combined_data, combined_data$MMSI == "Vessel 1")
+
+# vessel 2
+vessel2 <- filter(combined_data, combined_data$MMSI == "Vessel 2")
+
+# sf objects
+combined_sf <- st_as_sf(combined_data, coords = c("Longitude", "Latitude"), crs = 4326)
+combined_sf
+
+vessel1_sf <- st_as_sf(vessel1, coords = c("Longitude", "Latitude"), crs = 4326)
+vessel1_sf
+
+vessel2_sf <- st_as_sf(vessel2, coords = c("Longitude", "Latitude"), crs = 4326)
+vessel2_sf
+```
+# Map the points
+
+```{r}
+full_extent_map <- mapview(combined_sf)
+full_extent_map
+```
+```{r}
+
+vessel1_map <- mapview(vessel1_sf)
+vessel1_map
+```
+
+```{r}
+vessel1_map_labels <-
+  vessel1 %>%
+  leaflet(width = "100%") %>%
+  addTiles() %>%
+  addMarkers(lat = ~Latitude,
+             lng = ~Longitude,
+             popup = vessel1$Fishing_Activity)
+
+vessel1_map_labels
+```
+# synched views - vessel 1
+```{r}
+# fishing activity (explanatory variable)
+vessel1_fishing <- mapview(vessel1_sf, zcol = "Fishing_Activity", map.types = "Esri.WorldTerrain", legend = TRUE)
+
+# predictor variables
+vessel1_npp <- mapview(vessel1_sf, zcol = "NPP_Mean", map.types = "Esri.OceanBasemap", legend = TRUE)
+vessel1_dist <- mapview(vessel1_sf, zcol = "Distance_From_Shore", map.types = "Esri.OceanBasemap", legend = TRUE)
+vessel1_speed <- mapview(vessel1_sf, zcol = "Vessel_Speed", map.types = "Esri.OceanBasemap", legend = TRUE)
+vessel1_lat <- mapview(vessel1, xcol = "Longitude", ycol = "Latitude", crs = 4326, zcol = "Latitude", 
+                       map.types = "Esri.OceanBasemap", legend = TRUE, grid = FALSE)
+vessel1_long <- mapview(vessel1, xcol = "Longitude", ycol = "Latitude", crs = 4326, zcol = "Longitude", 
+                       map.types = "Esri.OceanBasemap", legend = TRUE, grid = FALSE)
+
+vessel1_fishing
+vessel1_npp
+vessel1_speed
+vessel1_lat
+vessel1_long
+
+sync(vessel1_fishing, vessel1_npp, vessel1_dist, vessel1_speed)
+```
+# colors
+```{r}
+pal <- colorNumeric(c("red", "green", "blue"), 1:10)
+pal(c(1, 6, 9))
+
+
+
+# Create a continuous palette function
+Vpal <- colorNumeric(
+  palette = "viridis",
+  domain = vessel1$NPP_Mean)
+
+vessel1_npp %>%
+  addPolygons(stroke = FALSE, smoothFactor = 0.2, fillOpacity = 1,
+    color = ~Vpal())
+```
+# Synched views -- vessel 2
+```{r}
+# fishing activity (explanatory variable)
+vessel2_fishing <- mapview(vessel2_sf, zcol = "Fishing_Activity", map.types = "Esri.WorldTerrain", legend = FALSE)
+
+# predictor variables
+vessel2_npp <- mapview(vessel2_sf, zcol = "NPP_Mean", map.types = "Esri.OceanBasemap", legend = TRUE)
+vessel2_dist <- mapview(vessel2_sf, zcol = "Distance_From_Shore", map.types = "Esri.OceanBasemap", legend = TRUE)
+vessel2_speed <- mapview(vessel2_sf, zcol = "Vessel_Speed", map.types = "Esri.OceanBasemap", legend = TRUE)
+vessel2_date <- mapview(vessel2_sf, zcol = "Date", map.types = "Esri.OceanBasemap", legend = TRUE)
+vessel2_lat <- mapview(vessel2, xcol = "Longitude", ycol = "Latitude", crs = 4326, zcol = "Latitude", 
+                       map.types = "Esri.OceanBasemap", legend = TRUE, grid = FALSE)
+vessel2_long <- mapview(vessel2, xcol = "Longitude", ycol = "Latitude", crs = 4326, zcol = "Longitude", 
+                       map.types = "Esri.OceanBasemap", legend = TRUE, grid = FALSE)
+
+vessel2_fishing
+vessel2_npp
+vessel2_speed
+vessel2_lat
+vessel2_long
+
+sync(vessel2_fishing, vessel2_npp, vessel2_speed, vessel2_lat, vessel2_long)
+```
+
+
+
+

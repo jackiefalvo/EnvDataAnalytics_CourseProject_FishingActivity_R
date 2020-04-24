@@ -1,0 +1,223 @@
+---
+title: "Investigating Predictors of Fishing Activity"
+author: "Cristiana Falvo"
+geometry: margin=2.54cm
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    fig_caption: yes
+    keep_tex: yes
+    number_sections: yes
+mainfont: Times New Roman
+subtitle: https://github.com/jackiefalvo/CFalvo_EnvDataAnalytics_FinalProject
+fontsize: 12pt
+---
+
+\newpage
+\tableofcontents 
+\newpage
+\listoftables 
+\newpage
+\listoffigures 
+\newpage
+
+```{r setup, include=FALSE}
+# Load your packages
+library(nlme)
+library(tidyverse)
+library(dplyr)
+library(here)
+library(anytime)
+library(sf)
+library(leaflet)
+library(mapview)
+
+# Set your working directory
+here()
+
+# Set your ggplot theme
+
+# Load your datasets
+longline_full <- read.csv(here("Data", "Raw", "Longline_full")) # raw longline data from Global Fishing Watch
+
+```
+
+
+## Rationale and Research Questions
+
+
+
+
+\newpage
+
+## Dataset Information
+
+The data used in my analysis are descriptive vessel tracking information from Global Fishing Watch that I supplemented with net primary productivity data from a SESYNC shiny app. Both components are briefly described below and fully described in my project documentation.
+
+### Data from Global Fishing Watch: Longline Vessel Tracking Data (CSV)
++ These longline data, like many data sets from Global Fishing Watch, originated from raw automatic identification system (AIS) data and were processed and released. By analyzing movement patterns, Global Fishing Watch’s neural networks transform raw AIS data into contextual information about fishing activity. 
++ The longline data I obtained is a CSV file that includes locations, times and fishing activity status of two different vessels. There are additional attributes of ‘distance from shore’ and ‘vessel speed’.
+
+### Data from SESYNC
+
+\newpage
+
+## Exploratory Analysis 
+
+### Data Wrangling
+```{r}
+# Longline data
+str(longline_full) # longline data has 65,499 observations and 11 data fields
+```
+
+1. **Fising Activity** Describes fishing activity as fishing (1), not fishing (0) and unknown (-1))
++ I examined the 'is_fishing' field to see how many observations were classified as 'fishing', 'not fishing', and 'unknown'. Since I am interested in modeling a binary fishing activity status ('fishing' vs. 'not fishing'), I narrowed the data to only include observations with either a 'fishing' or 'not fishing' status, leaving me with 4,189 observations.
+
+```{r}
+# counts
+count(longline_full, longline_full$is_fishing == 0) # 1,397 'not fishing' statuses (2.13% not fishing)
+count(longline_full, longline_full$is_fishing == 1) # 2,792 'fishing' statuses (4.26% fishing)
+count(longline_full, longline_full$is_fishing == -1) # 61,310 'no data' statuses (93.6% unknown -- eliminate these)
+
+
+# narrow data to only include instances of 'fishing' and 'not fishing' 
+longline_fishing <- filter(longline_full, is_fishing %in% c(0, 1))
+```
+
+2. **MMSI** Unique identifier for individual fishing vessels
++ To determine the number of vessels included in the data set, I counted the unique field values and then renamed each value to be more distinguishable.
+```{r}
+class(longline_fishing$mmsi) 
+unique(longline_fishing$mmsi) # 2 unique mmsi IDs in the data set
+longline_fishing$mmsi <- as.factor(longline_fishing$mmsi) 
+longline_fishing$mmsi <- 
+  recode(longline_fishing$mmsi, "12639560807591" = "Vessel 1", "51394439323066" = "Vessel 2")
+
+# (the rest of cleanup)
+# did: is_fishing, mmsi
+# do: date format, select relevant fields, changed names
+#     joined npp data
+```
+
+
+### Data Exploration -- Mapping
+
+```{r, include = FALSE}
+combined_data <- read.csv(here("Data", "Processed", "Combined_LonglineNPP_Processed.csv"))
+
+combined_data$Date <- as.Date(combined_data$Date)
+
+# vessel 1 and vessel 2
+vessel1 <- filter(combined_data, combined_data$MMSI == "Vessel 1")
+vessel2 <- filter(combined_data, combined_data$MMSI == "Vessel 2")
+
+# create sf objects using WGS 84 projection
+combined_sf <- st_as_sf(combined_data, coords = c("Longitude", "Latitude"), crs = 4326)
+vessel1_sf <- st_as_sf(vessel1, coords = c("Longitude", "Latitude"), crs = 4326)
+vessel2_sf <- st_as_sf(vessel2, coords = c("Longitude", "Latitude"), crs = 4326)
+
+# separate vessel 1 and vessel 2 (separate data sets for mapping exploration)
+#* show v1 and v2 maps
+vessel1_map <- mapview(vessel1_sf)
+vessel1_map
+
+vessel2_map <- mapview(vessel2_sf)
+vessel2_map
+```
+
+#### **Full Extent Map**  
+Exploring the data in space revealed that the two tracked vessels were fishing in two different parts of the world.
+```{r, echo = FALSE}
+#* show full extent of the data set with all observations
+full_extent_map <- mapview(combined_sf)
+full_extent_map
+```
+<This map shows both vessel 1 observations (in the east Atlantic between Spain and Africa) and vessel 2 observations (in the eastern Pacific between Washington state and Alaska).>
+
+#### **Vessel 1 - Fishing Activity**
+Here the extent is narrowed to show just vessel 1 observations. 
+```{r, echo = FALSE}
+# fishing activity (explanatory variable)
+vessel1_fishing <- mapview(vessel1_sf, zcol = "Fishing_Activity", map.types = "Esri.WorldTerrain", legend = TRUE)
+vessel1_fishing
+```
+<This map shows vessel 1 observations distinguished by the presence or ansence of fishing activity. Yellow signifies points where the vessel was determined to be fishing while purple signifies points where it was not.>
+
+#### **Vessel 1 - Predictor Variables**
+Here is an exploratory view of the additional data included for each observation point.
+```{r, echo = FALSE}
+# predictor variables
+vessel1_npp <- mapview(vessel1_sf, zcol = "NPP_Mean", map.types = "Esri.OceanBasemap", legend = TRUE)
+vessel1_dist <- mapview(vessel1_sf, zcol = "Distance_From_Shore", map.types = "Esri.OceanBasemap", legend = TRUE)
+vessel1_speed <- mapview(vessel1_sf, zcol = "Vessel_Speed", map.types = "Esri.OceanBasemap", legend = TRUE)
+vessel1_lat <- mapview(vessel1, xcol = "Longitude", ycol = "Latitude", crs = 4326, zcol = "Latitude", 
+                       map.types = "Esri.OceanBasemap", legend = TRUE, grid = FALSE)
+vessel1_long <- mapview(vessel1, xcol = "Longitude", ycol = "Latitude", crs = 4326, zcol = "Longitude", 
+                       map.types = "Esri.OceanBasemap", legend = TRUE, grid = FALSE)
+
+sync(vessel1_long, vessel1_dist, vessel1_npp, vessel1_speed)
+```
+<This map shows how each variable's range is distributed across the observation points for vessel 1. These will be further examined in the analysis to determine how each variable correlates with fishing activity.>
+
+#### **Vessel 2 - Fishing Activity**
+Here the extent is narrowed to show just vessel 1 observations.
+```{r, echo = FALSE}
+# fishing activity (explanatory variable)
+vessel2_fishing <- mapview(vessel2_sf, zcol = "Fishing_Activity", map.types = "Esri.WorldTerrain", legend = FALSE)
+```
+<This map shows vessel 2 observations distinguished by the fishing activity, yellow signifies fishing while purple signifies not fishing.>
+
+#### **Vessel 2 - Predictor Variables**
+Here is an exploratory view of the additional data included for each observation point.
+```{r, echo = FALSE}
+# predictor variables
+vessel2_npp <- mapview(vessel2_sf, zcol = "NPP_Mean", map.types = "Esri.OceanBasemap", legend = TRUE)
+vessel2_dist <- mapview(vessel2_sf, zcol = "Distance_From_Shore", map.types = "Esri.OceanBasemap", legend = TRUE)
+vessel2_speed <- mapview(vessel2_sf, zcol = "Vessel_Speed", map.types = "Esri.OceanBasemap", legend = TRUE)
+vessel2_date <- mapview(vessel2_sf, zcol = "Date", map.types = "Esri.OceanBasemap", legend = TRUE)
+vessel2_lat <- mapview(vessel2, xcol = "Longitude", ycol = "Latitude", crs = 4326, zcol = "Latitude", 
+                       map.types = "Esri.OceanBasemap", legend = TRUE, grid = FALSE)
+vessel2_long <- mapview(vessel2, xcol = "Longitude", ycol = "Latitude", crs = 4326, zcol = "Longitude", 
+                       map.types = "Esri.OceanBasemap", legend = TRUE, grid = FALSE)
+
+vessel2_fishing
+sync(vessel2_long, vessel2_dist, vessel2_npp, vessel2_speed)
+```
+<This map shows how each variable's range is distributed across the observation points for vessel 2. These will be further examined in the analysis to determine how each variable correlates with fishing activity.>
+
+\newpage
+
+# Analysis
+
+```{r}
+# AIC and model summaries
+  # model summaries / correlations
+    ## --> report estimate values and visual correlations
+    #* show good and poor predictors
+  # AIC selected variables for best model 
+    ## --> report difference in overall deviance
+
+
+# questions
+## what are the best predictors for the overall data?
+## what are the best predictors for each vessel?
+## which variables are good predictors in both areas?
+  ## .. how well do variables for v1 successfully predict fishing activity for v2?
+```
+
+
+## Question 1: <insert specific question here and add additional subsections for additional questions below, if needed>
+
+## Question 2: 
+
+
+\newpage
+
+# Summary and Conclusions
+
+
+\newpage
+
+# References
+<add references here if relevant, otherwise delete this section> 
