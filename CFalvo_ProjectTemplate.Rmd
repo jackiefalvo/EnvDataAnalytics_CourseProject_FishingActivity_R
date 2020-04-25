@@ -36,8 +36,6 @@ library(mapview)
 # Set your working directory
 here()
 
-# Set your ggplot theme
-
 # Load your datasets
 longline_full <- read.csv(here("Data", "Raw", "Longline_full")) # raw longline data from Global Fishing Watch
 
@@ -46,7 +44,13 @@ longline_full <- read.csv(here("Data", "Raw", "Longline_full")) # raw longline d
 
 ## Rationale and Research Questions
 
+My interest in maritime industries led me to explore data from Global Fishing Watch, an international non-profit organization that provides open source data on global fishing activity. Through their data portal I discovered a data set that tracks the locations of two longline fishing vessels throughout their fishing excursions; at each point it was marked whether the vessel was determined to be fishing or not fishing. Finding this dataset sparked my curiosity as to what other things were going on at each point and whether there were patterns between other variables and fishing activity. 
 
+Because my data set consisted of two separate vessels embarking on fishing excursions in two different regions of the world, I decided to frame my investigation by separately investigating the full extent of the data, the vessel 1 observations and the vessel 2 observations. This approach resulted in me asking the following three research questions:
+
+1. What is the optimal set of variables that predict fishing activity across the full extent of the data set?
+2. Which variable(s) have the strongest explanatory power for predicting fishing activity across vessel 1 observations?
+3. Which variables(s) have the strongest explanatory power for predicting fishing activity across vessel 2 observations?
 
 
 \newpage
@@ -55,50 +59,95 @@ longline_full <- read.csv(here("Data", "Raw", "Longline_full")) # raw longline d
 
 The data used in my analysis are descriptive vessel tracking information from Global Fishing Watch that I supplemented with net primary productivity data from a SESYNC shiny app. Both components are briefly described below and fully described in my project documentation.
 
-### Data from Global Fishing Watch: Longline Vessel Tracking Data (CSV)
+#### Data from Global Fishing Watch (GFW): Longline Vessel Tracking Data (CSV)
 + These longline data, like many data sets from Global Fishing Watch, originated from raw automatic identification system (AIS) data and were processed and released. By analyzing movement patterns, Global Fishing Watch’s neural networks transform raw AIS data into contextual information about fishing activity. 
 + The longline data I obtained is a CSV file that includes locations, times and fishing activity status of two different vessels. There are additional attributes of ‘distance from shore’ and ‘vessel speed’.
++ Link to data source: https://globalfishingwatch.org/datasets-and-code/
 
-### Data from SESYNC
+#### Data from the National Socio-Environmental Synthesis Center (SESYNC): Net Primary Productivity Data (CSV)
++ SESYNC’s Marine Socio-Environmental Covariates Shiny App provides oceanographic information based on latitude longitude locations that can be fed into the app. To supplement my longline fishing dataset, I obtained net primary productivity (NPP) data from each vessel observation location in my dataset. Majority of the NPP values lined up with the coordinates I provided, and a portion of the values were interpolated. 
++ Net primary productivity (NPP) data are reported as average values in milligrams of carbon per meter squared per day (mg C/m^2^ day).
++ Link to data source: https://shiny.sesync.org/apps/msec/
+
 
 \newpage
 
 ## Exploratory Analysis 
 
 ### Data Wrangling
+
+The raw longline data had 65,499 observations and 11 variables when downloaded from Global Fishing Watch.
 ```{r}
 # Longline data
-str(longline_full) # longline data has 65,499 observations and 11 data fields
+str(longline_full) 
 ```
 
 1. **Fising Activity** Describes fishing activity as fishing (1), not fishing (0) and unknown (-1))
-+ I examined the 'is_fishing' field to see how many observations were classified as 'fishing', 'not fishing', and 'unknown'. Since I am interested in modeling a binary fishing activity status ('fishing' vs. 'not fishing'), I narrowed the data to only include observations with either a 'fishing' or 'not fishing' status, leaving me with 4,189 observations.
+I examined the 'is_fishing' field to see how many observations were classified as 'fishing', 'not fishing', and 'unknown'. Since I am interested in modeling a binary fishing activity status ('fishing' vs. 'not fishing'), I narrowed the data to only include observations with either a 'fishing' or 'not fishing' status, leaving me with 4,189 observations.
 
 ```{r}
-# counts
-count(longline_full, longline_full$is_fishing == 0) # 1,397 'not fishing' statuses (2.13% not fishing)
-count(longline_full, longline_full$is_fishing == 1) # 2,792 'fishing' statuses (4.26% fishing)
-count(longline_full, longline_full$is_fishing == -1) # 61,310 'no data' statuses (93.6% unknown -- eliminate these)
+# fishing activity counts
+x <- count(longline_full, longline_full$is_fishing == 0)  
+y <- count(longline_full, longline_full$is_fishing == 1)  
+z <- count(longline_full, longline_full$is_fishing == -1) 
 
+print(x, "1,397 'not fishing' statuses (2.13% not fishing)")
+print(y, "2,792 'fishing' statuses (4.26% fishing)")
+print(z, "61,310 'no data' statuses (93.6% unknown -- eliminate these)")
 
 # narrow data to only include instances of 'fishing' and 'not fishing' 
 longline_fishing <- filter(longline_full, is_fishing %in% c(0, 1))
 ```
 
 2. **MMSI** Unique identifier for individual fishing vessels
-+ To determine the number of vessels included in the data set, I counted the unique field values and then renamed each value to be more distinguishable.
-```{r}
-class(longline_fishing$mmsi) 
+To determine the number of vessels included in the data set, I counted the unique field values and then renamed each value to be more distinguishable. I later separated the data into two data frames for exploration, one for each vessel.
+```{r, echo = FALSE}
+# class(longline_fishing$mmsi) 
 unique(longline_fishing$mmsi) # 2 unique mmsi IDs in the data set
 longline_fishing$mmsi <- as.factor(longline_fishing$mmsi) 
 longline_fishing$mmsi <- 
   recode(longline_fishing$mmsi, "12639560807591" = "Vessel 1", "51394439323066" = "Vessel 2")
-
-# (the rest of cleanup)
-# did: is_fishing, mmsi
-# do: date format, select relevant fields, changed names
-#     joined npp data
+unique(longline_fishing$mmsi)
 ```
+3. **NPP** Net Primary Productivity data (downloaded from SESYNC)
+To supplement the information available for each vessel location, I acquired net primary productivity (NPP) data from SESYNC and joined it to my processed longline data. At the end of processing, I had selected the variables I wanted to test for explanatory power in my models and converted them to appropriate formats for analysis. 
+
+```{r, echo = FALSE}
+# data
+npp <- read.csv(here("Data", "Raw", "SESYNC_NPP.csv"))
+longline <- read.csv(here("Data", "Processed", "Longline_Processed.csv"))
+
+# add ID column to npp data
+npp_ID <- tibble::rowid_to_column(npp, "ID")
+  
+# join npp data to longline data by ID
+combined <- left_join(longline, npp_ID,
+                      by = c("X" = "ID"))
+
+# select and rename columns for processed data to use for analysis
+processed_LonglineNPP <- select(combined, X, mmsi, Date, Time, lat.x, long.x, speed, distance_from_shore, npp_mean, is_fishing)
+
+colnames(processed_LonglineNPP) <- c("ID", "MMSI", "Date", "Latitude", "Longitude", "Vessel_Speed", "Distance_From_Shore", "NPP_Mean", "Fishing_Activity")
+
+processed_LonglineNPP$Date <- as.Date(processed_LonglineNPP$Date, format = "%Y-%m-%d") 
+processed_LonglineNPP$Fishing_Activity <- as.factor(processed_LonglineNPP$Fishing_Activity)
+
+str(processed_LonglineNPP)
+```
+
+Entity and Attribute information for processed data set:
+
+Data Field | Definition | Units | Source
+------------- | ------------- | ------------- | -------------
+ID | Unique identifier for observation | NA | GFW
+MMSI | Unique identifier for vessel | NA | GFW
+Date | Date of observation | YYYY-MM-DD | GFW
+Latitude | Latitude coordinate of observation | Decimal Degrees | GFW
+Longitude | Longitude coordinate of observation | Decimal Degrees | GFW
+Vessel_Speed | Speed of vessel at observed point | Knots | GFW
+Distance_From_Shore | Distance vessel is observed from shore | Meters | GFW
+NPP_Mean | Mean net primary productivity value | mg C/m^2^ day | SESYNC
+Fishing_Activity | Indication of whether observed vessel is determined to be fishing (1) or not fishing (0) based on GFW algorithms | NA | GFW
 
 
 ### Data Exploration -- Mapping
@@ -156,15 +205,18 @@ vessel1_lat <- mapview(vessel1, xcol = "Longitude", ycol = "Latitude", crs = 432
 vessel1_long <- mapview(vessel1, xcol = "Longitude", ycol = "Latitude", crs = 4326, zcol = "Longitude", 
                        map.types = "Esri.OceanBasemap", legend = TRUE, grid = FALSE)
 
-sync(vessel1_long, vessel1_dist, vessel1_npp, vessel1_speed)
+leafsync::sync(vessel1_long, vessel1_dist, vessel1_speed, vessel1_npp)
 ```
-<This map shows how each variable's range is distributed across the observation points for vessel 1. These will be further examined in the analysis to determine how each variable correlates with fishing activity.>
+<This map shows how each variable's range is distributed across the observation points for vessel 1. These will be further examined in the analysis to determine how each variable correlates with fishing activity. Note that latitude is not shown as a predictor here due to its redundancy with distance from shore in this instance.>
+
+
 
 #### **Vessel 2 - Fishing Activity**
 Here the extent is narrowed to show just vessel 1 observations.
 ```{r, echo = FALSE}
 # fishing activity (explanatory variable)
-vessel2_fishing <- mapview(vessel2_sf, zcol = "Fishing_Activity", map.types = "Esri.WorldTerrain", legend = FALSE)
+vessel2_fishing <- mapview(vessel2_sf, zcol = "Fishing_Activity", map.types = "Esri.WorldTerrain", legend = TRUE)
+vessel2_fishing
 ```
 <This map shows vessel 2 observations distinguished by the fishing activity, yellow signifies fishing while purple signifies not fishing.>
 
@@ -181,43 +233,124 @@ vessel2_lat <- mapview(vessel2, xcol = "Longitude", ycol = "Latitude", crs = 432
 vessel2_long <- mapview(vessel2, xcol = "Longitude", ycol = "Latitude", crs = 4326, zcol = "Longitude", 
                        map.types = "Esri.OceanBasemap", legend = TRUE, grid = FALSE)
 
-vessel2_fishing
-sync(vessel2_long, vessel2_dist, vessel2_npp, vessel2_speed)
+leafsync::sync(vessel2_lat, vessel2_dist, vessel2_speed, vessel2_npp)
 ```
-<This map shows how each variable's range is distributed across the observation points for vessel 2. These will be further examined in the analysis to determine how each variable correlates with fishing activity.>
+<This map shows how each variable's range is distributed across the observation points for vessel 2. These will be further examined in the analysis to determine how each variable correlates with fishing activity. Note that longitude is not shown as a variable here due to its redundancy with distance from shore in this instance.>
 
 \newpage
 
 # Analysis
 
-```{r}
-# AIC and model summaries
-  # model summaries / correlations
-    ## --> report estimate values and visual correlations
-    #* show good and poor predictors
-  # AIC selected variables for best model 
-    ## --> report difference in overall deviance
+### **Explanatory Power of Predictors Across Full Data Extent**
+**General Approach:**
+Generally, my goal in this analysis was to assess the explanatory power of each variable in predicting fishing behavior. To do this I ran binomial regression models that used five data fields (latitude, longitude, vessel speed, distance from shore and NPP value) as predictor variables to attempt to describe the binomial condition of fishing vs. not fishing. I started by examining the variables as predictors for the data set as a whole, then took a closer look at how effectively the same predictors described the fishing activity for each vessel individually. 
 
+**Full Extent Model Outputs:**
+The main model was run with all five predictor variables to start, resulting in ~42.525% deviance explained and an AIC value of 3077.515. An AIC step analysis was then run to determine the optimal combination of variables for predicting fishing activity across the full extent of the data set. The AIC analysis determined that removing the NPP Mean variable from the model would result in about the same deviance explained (42.519%) and a slightly lower AIC. These outputs as well as the relative explanatory power of each variable is shown below. 
 
-# questions
-## what are the best predictors for the overall data?
-## what are the best predictors for each vessel?
-## which variables are good predictors in both areas?
-  ## .. how well do variables for v1 successfully predict fishing activity for v2?
+```{r, echo = FALSE}
+# combined model
+combined_model <- glm(formula = Fishing_Activity ~ Latitude + Longitude + Distance_From_Shore + Vessel_Speed + NPP_Mean,
+                      family = binomial(link = "logit"), data = combined_data)
+
+null_dev = summary(combined_model)$null.deviance
+res_dev = summary(combined_model)$deviance
+dev_expl = ((null_dev - res_dev) / null_dev) * 100
+
+print(c("Percent Deviance Explained:", dev_expl, "AIC:", combined_model$aic))
+```
+```{r, echo=FALSE}
+# combined model -- correlations
+par(mfrow=c(2,3))
+termplot(combined_model, ylim="common", rug=TRUE) # rug = shows distribution of points
+mtext("Full Extent Correlation Plots", side=3, line=-2, outer=TRUE)
 ```
 
 
-## Question 1: <insert specific question here and add additional subsections for additional questions below, if needed>
+**Question 1: What is the optimal set of variables that predict fishing activity across the full extent of the data set?**
 
-## Question 2: 
+Latitude, Longitude, Distance from Shore and Vessel Speed
 
+**Optimal Predictor Variables for Full Extent:**
+```{r, echo= FALSE}
+combined_model_aic <- glm(formula = Fishing_Activity ~ Latitude + Longitude + Distance_From_Shore + Vessel_Speed, 
+      family = binomial(link = "logit"), data = combined_data)
+
+# combined model AIC -- outputs
+null_dev_comb_aic = summary(combined_model_aic)$null.deviance
+res_dev_comb_aic = summary(combined_model_aic)$deviance
+dev_expl_comb_aic = ((null_dev_comb_aic - res_dev_comb_aic) / null_dev_comb_aic) * 100
+
+print(c("Percent Deviance Explained:", dev_expl_comb_aic, "AIC:", combined_model_aic$aic))
+```
+**Discussion of Full Extent Model results**
+Obtaining these results after removing the NPP Mean variable from the Full Extent model reveals that the remaining four variables can explain about the same amount of deviance in a slightly more parsimonious way. This makes sense when looking at the weak correlation shown between NPP Mean and likelihood of fishing activity (shown in the Full Extent Correlation Plots above). These correlation plots also show the strongest predictor variables to be latitude and longitude. The effectiveness of latitude and longitude as predictors of fishing may be skewed due to our data being clustered into two small regions of the ocean, resulting in our latitude and longitude ranges being relatively small. 
+
+Overall, the deviance explained from the Full Extent Model is less than 50%, which suggests these predictor variables don’t do a great job at predicting fishing activity across the full extent of the data set. 
+
+### **Explanatory Power of Predictors Across Vessel 1 Observations**
+**Vessel 1 Model Outputs:**
+Narrowing the extent of the analysis to only include observation points from vessel 1, a binomial regression model with the same five variables (latitude, longitude, vessel speed, distance from shore, and mean NPP value) was run. The vessel 1 model variables were determined to be the most parsimonious set of variables to predict fishing activity as determined by an AIC step analysis. The percent deviance explained from this model was 56.039% and the AIC value was 186.922. 
+
+```{r, echo = FALSE}
+# vessel 1 model
+vessel1_model <- glm(formula = Fishing_Activity ~ Latitude + Longitude + Distance_From_Shore + Vessel_Speed + NPP_Mean, family = binomial(link = "logit"), data = vessel1)
+
+# vessel 1 -- outputs
+null_dev_v1 = summary(vessel1_model)$null.deviance
+res_dev_v1 = summary(vessel1_model)$deviance
+dev_expl_v1 = ((null_dev_v1 - res_dev_v1) / null_dev_v1) * 100
+
+print(c("Percent Deviance Explained:", dev_expl_v1, "AIC:", vessel1_model$aic))
+```
+```{r, echo = FALSE}
+# vessel 1 -- correlations
+par(mfrow=c(2,3))
+termplot(vessel1_model, ylim="common", rug=TRUE) # rug = shows distribution of points
+mtext("Vessel 1 Correlation Plots", side=3, line=-2, outer=TRUE)
+```
+
+**Question 2: Which variable had the strongest explanatory power for fishing activity among vessel 1 observations?**
+The variable with the strongest explanatory power in predicting fishing activity off the coast of Africa was the mean NPP value. The positive correlation between fishing activity (left) and mean NPP (in mg C/m^2^ day) (right) is shown visually in the map below. 
+
+```{r, echo = FALSE}
+leafsync::sync(vessel1_fishing, vessel1_npp)
+```
+
+### **Explanatory Power of Predictor Variables Across Vessel 2 Observations**
+**Vessel 2 Model Outputs:**
+```{r, echo = FALSE}
+# vessel 2 model
+vessel2_model <- glm(formula = Fishing_Activity ~ Latitude + Longitude + Distance_From_Shore + Vessel_Speed + NPP_Mean,
+                     family = binomial(link = "logit"), data = vessel2)
+
+# vessel 2 -- outputs
+null_dev_v2 = summary(vessel2_model)$null.deviance
+res_dev_v2 = summary(vessel2_model)$deviance
+dev_expl_v2 = ((null_dev_v2 - res_dev_v2) / null_dev_v2) * 100
+
+print(c("Percent Deviance Explained:", dev_expl_v2, "AIC:", vessel2_model$aic))
+```
+```{r, echo = FALSE}
+# vessel 2 -- correlations
+par(mfrow=c(2,3))
+termplot(vessel2_model, ylim="common", rug=TRUE) # rug = shows distribution of points
+mtext("Vessel 2 Correlation Plots", side=3, line=-2, outer=TRUE)
+```
+
+**Question 3: Which variable had the strongest explanatory power for fishing activity among vessel 2 observations?**
+The variable with the strongest explanatory power in predicting fishing activity off the coast of Alaska was latitude. The positive correlation between fishing activity (left) and latitude (right) is shown visually in the map below. Note that the trajectory of the vessel's travel path to its fishing grounds lines up well with increasing latitude lines by coincidence, thus increasing latitude should not be misinterpreted as a good predictor of fishing activity in all instances. 
+
+```{r, echo = FALSE}
+leafsync::sync(vessel2_fishing, vessel2_lat)
+```
 
 \newpage
 
-# Summary and Conclusions
+# General Discussion
 
+### **Comparability of Vessel 1 and Vessel 2 Models**
+It is important to note that due to differences in sample size and variable value ranges between vessel 1 and vessel 2 data, the percent deviance explained and AIC values are not comparable between the two models. Because the models were run on fishing activity in different parts of the globe, there were significant differences between the range of latitude, longitude and mean NPP value. This suggests that the each model is probably better suited to predict fishing activity in areas that have similar ranges in these variables. This is not an indication of poor model strength but rather an emphasis on the natural differences between variables and qualities that merit fishing activity between different ocean ecosystems across the globe. Additionally, sample size differed drastically between vessels 1 and 2 as well as between instances of fishing and not fishing. For stronger conclusions to be made, it would be preferable to have larger and more equitable sample sizes between both the vessels and the instances of fishing activity.  
 
-\newpage
-
-# References
-<add references here if relevant, otherwise delete this section> 
+### **Further Analysis**
+This exploratory analysis provided insight into the strength of five variables in predicting fishing activity in two different marine regions. It would be interesting to further the analysis by testing the power of the models in predicting fishing activity for points where the fishing status is unknown. Ideally this would be done with the addition of good quality oceanographic variables that are collected at time intervals that match the granularity of the global fishing watch observations. Based on my analysis, I wouldn't expect that most sets of regional variables would be good predictors across different marine ecosystems, particularly ones at different latitudes, but I think that with good quality inputs a model similar to this one could do a fair job at predicting fishing activity on a regional scale. 
