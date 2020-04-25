@@ -21,7 +21,6 @@ longline_full <- read.csv(here("Data", "Raw", "Longline_full"))
 # preserve raw data
 ## write.csv(longline_full, here("Data", "Raw", "Longline_full"))
 
-
 ```
 
 ## Data exploration

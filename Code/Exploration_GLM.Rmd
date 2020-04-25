@@ -6,26 +6,13 @@ output: html_document
 ```{r}
 library(nlme)
 library(tidyverse)
+library(here)
 
 library(piecewiseSEM)
 # to visualize linear reg
 require(ggiraph)
 require(ggiraphExtra)
 ```
-# time field
-```{r}
-x$datetime1 <- as.POSIXct(paste(x$date, x$time), format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
-
-anytime(combined_data$Time)
-
-combined_data$Time <- as.character(combined_data$Time)
-
-combined_data$Time <- as.POSIXct(paste(combined_data$Date, combined_data$Time), format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
-
-str(combined_data)
-```
-
-
 # Data
 ```{r}
 here()
@@ -43,18 +30,38 @@ vessel
 ```
 
 # Combined model
-```{r}
+```{r, include = FALSE}
 # main 3 variables 
-combined_model <- glm(formula = Fishing_Activity ~ Vessel_Speed + Distance_From_Shore + NPP_Mean, Latitude, Longitude,
+combined_model <- glm(formula = Fishing_Activity ~ Vessel_Speed + Distance_From_Shore + NPP_Mean + Latitude + Longitude,
                       family = binomial(link = "logit"), data = combined_data)
 
-step(longline_model_three)
-
 summary(combined_model)
-# call same, AIC = 3454
+
 ```
-# Null Deviance
+
+```{r, echo = FALSE}
+null_dev = summary(combined_model)$null.deviance
+res_dev = summary(combined_model)$deviance
+
+print(c("Null Deviance:", null_dev, "Residual Deviance:", res_dev))
+
+dev_expl = ((null_dev - res_dev) / null_dev) * 100
+print(c("Percent Deviance Explained:", dev_expl, "AIC:", combined_model$aic))
+```
+
 ```{r}
+step(combined_model)
+```
+
+```{r, echo = FALSE}
+combined_model_aic <- glm(formula = Fishing_Activity ~ Vessel_Speed + Distance_From_Shore + Latitude + Longitude, 
+      family = binomial(link = "logit"), data = combined_data)
+
+
+```
+
+# Null Deviance
+```{r deviance, echo = FALSE}
 null_dev = summary(combined_model)$null.deviance
 res_dev = summary(combined_model)$deviance
 
@@ -72,7 +79,6 @@ par(mfrow=c(2,3))
 termplot(longline_model_main3, ylim="common", rug=TRUE) # rug = shows distribution of points
 mtext("GLM, Free YLIM", side=3, line=-2, outer=TRUE)
 ```
-
 
 ## AIC vessel 1
 ```{r}
@@ -94,7 +100,6 @@ mtext("GLM, Free YLIM", side=3, line=-2, outer=TRUE)
 ```
 
 
-
 ## AIC Vessel 2
 ```{r}
 vessel2_model <- glm(formula = Fishing_Activity ~ Vessel_Speed + Distance_From_Shore + NPP_Mean + Latitude + Longitude + Date, family = binomial(link = "logit"), data = vessel2)
@@ -110,42 +115,3 @@ termplot(vessel2_model, ylim="common", rug=TRUE) # rug = shows distribution of p
 mtext("GLM, Free YLIM", side=3, line=-2, outer=TRUE)
 ```
 
-
-
-# Null Deviance
-```{r}
-null_dev = summary(longline_model_main3)$null.deviance
-res_dev = summary(longline_model_main3)$deviance
-
-print(c("Null Deviance:", null_dev, "Residual Deviance:", res_dev))
-
-dev_expl = ((null_dev - res_dev) / null_dev) * 100
-print(c("Percent Deviance Explained:", dev_expl))
-
-```
-
-```{r}
-### this is what we did in assignment 7
-
-
-longline_model <- lm(data = longline, is_fishing ~ speed + distance_from_shore + lat)
-summary(longline_model)
-
-#### GIS example 
-
-glm_model <- glm(formula = species ~ bathy + dist_kelp + botc10_8ws + dist_100m + habras10, family = binomial(link = "logit"), data = species_presence_absence)
-
-#Examine GLM summary
-summary(glm_model)
-
-# coefficients - shows us relationships (sign and magnitude)
-# astrix - shows sig between variables
-  ## bathy, kelp, botc10 = very significant
-  ## don't confuse sig with amount of deviance that's explained..
-    ## null deviance = deviance that could be explained
-    ## residual = how much is left
-      ## then you look at the diff between those to see 'how much is explained'
-# AIC = a.. info coefficient; dif combos of vars, info explained w dif amounts of vars we have
-  ## see if we over or under explained
-
-```

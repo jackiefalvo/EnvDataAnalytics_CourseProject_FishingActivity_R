@@ -44,8 +44,8 @@ vessel2_sf
 full_extent_map <- mapview(combined_sf)
 full_extent_map
 ```
+## vessel 1
 ```{r}
-
 vessel1_map <- mapview(vessel1_sf)
 vessel1_map
 ```
@@ -61,7 +61,7 @@ vessel1_map_labels <-
 
 vessel1_map_labels
 ```
-# synched views - vessel 1
+### synched views - vessel 1
 ```{r}
 # fishing activity (explanatory variable)
 vessel1_fishing <- mapview(vessel1_sf, zcol = "Fishing_Activity", map.types = "Esri.WorldTerrain", legend = TRUE)
@@ -83,22 +83,10 @@ vessel1_long
 
 sync(vessel1_fishing, vessel1_npp, vessel1_dist, vessel1_speed)
 ```
-# colors
 ```{r}
-pal <- colorNumeric(c("red", "green", "blue"), 1:10)
-pal(c(1, 6, 9))
-
-
-
-# Create a continuous palette function
-Vpal <- colorNumeric(
-  palette = "viridis",
-  domain = vessel1$NPP_Mean)
-
-vessel1_npp %>%
-  addPolygons(stroke = FALSE, smoothFactor = 0.2, fillOpacity = 1,
-    color = ~Vpal())
+leafsync::sync(vessel1_fishing, vessel1_npp)
 ```
+
 # Synched views -- vessel 2
 ```{r}
 # fishing activity (explanatory variable)
