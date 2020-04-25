@@ -367,12 +367,12 @@ summary {
 
 <div id="cfalvo_envdataanalytics_finalproject" class="section level1">
 <h1>CFalvo_EnvDataAnalytics_FinalProject</h1>
-<p>This is a course project outlining skills learned in Environmental Data Analytics course (Duke, Spring 2020). The project processes and analyzes AIS data from Global Fishing Watch (globalfishingwatch.org).</p>
+<p>This is a course project outlining skills learned in Environmental Data Analytics course (Duke, Spring 2020). The project explores and analyzes Global Fishing Watch data supplemented with SESYNC data to assess which variables are the best predictors of fishing activity.</p>
 <div id="summary" class="section level2">
 <h2>Summary</h2>
 <p>This repository houses a final project in an Environmental Data Analytics course, taken at Duke University in spring 2020 and taught by Kateri Salk-Gunderson. The purpose of the project is to both examplify R skills and best practices learned in the course and to pose and answer some research questions I have about commercial fishing.</p>
 <p>The data I am exploring for this project comes from Global Fishing Watch, a non-profit organization that strives to increase transparency in global fishing activity through providing open-source data and tools (<a href="https://globalfishingwatch.org/data-download/datasets/public-training-data-v1" class="uri">https://globalfishingwatch.org/data-download/datasets/public-training-data-v1</a>). Global fishing watch takes AIS data, tracking data for commercial ships that are made publically available, and runs algorithms that characterize the AIS data into various categories.</p>
-<p>The particular data I chose to analyze are the locations and times that two different fishing vessels were detected. The fishing vessels were characterized as longline vessels (vessels that use a longline type of fishing gear) and have several variables associated with each spatiotemporal point (speed, distance from shore, distance from port, and whether or not the vessel is believed to be fishing or not). The main objective of my project was to use a regression model to determine which variables are good predictors of fishing.</p>
+<p>The particular data I chose to analyze are the locations and times that two different fishing vessels were detected. The fishing vessels were characterized as longline vessels (vessels that use a longline type of fishing gear) and have several variables associated with each spatiotemporal point (speed, distance from shore, distance from port, and whether or not the vessel is believed to be fishing or not). I obtained net primary productivity data for the observed vessel locations to serve as an additional predictor variable. My primary goal in this exploration was to investigate which variables are the best predictors of fishing activity.</p>
 </div>
 <div id="investigators" class="section level2">
 <h2>Investigators</h2>
@@ -380,29 +380,127 @@ summary {
 </div>
 <div id="keywords" class="section level2">
 <h2>Keywords</h2>
-<p>fishing, global fishing watch, longline, regression model, tidyverse, statistics</p>
+<p>fishing, global fishing watch, longline, binomial regression model, statistics, tidyverse, mapview, leaflet, SESYNC</p>
 </div>
 <div id="folder-structure-file-formats-and-naming-conventions" class="section level2">
 <h2>Folder structure, file formats, and naming conventions</h2>
-<p>The following folders are included in this repository: - Data: contains folders for raw and processed data - Code: contains separate R scripts for each stage of the general processing (data processing, data analysis) - Output: contains outputs from analysis including charts, graphs and statistics</p>
+<p>The following folders are included in this repository:</p>
+<ul>
+<li>Data: contains folders for raw and processed data</li>
+<li>Code: contains separate R scripts for each stage of the general processing (data processing, data analysis)</li>
+</ul>
 </div>
 <div id="database-information" class="section level2">
 <h2>Database Information</h2>
-<p>Longline fishing data: - CSV data - Downloaded from <a href="https://globalfishingwatch.org/data-download/datasets/public-training-data-v1" class="uri">https://globalfishingwatch.org/data-download/datasets/public-training-data-v1</a> - Downloaded on March 25, 2020</p>
+<div id="data-from-global-fishing-watch-gfw-longline-vessel-tracking-data-csv" class="section level4">
+<h4>Data from Global Fishing Watch (GFW): Longline Vessel Tracking Data (CSV)</h4>
+<ul>
+<li>These longline data, like many data sets from Global Fishing Watch, originated from raw automatic identification system (AIS) data and were processed and released. By analyzing movement patterns, Global Fishing Watch’s neural networks transform raw AIS data into contextual information about fishing activity.</li>
+<li>The longline data I obtained is a CSV file that includes locations, times and fishing activity status of two different vessels. There are additional attributes of ‘distance from shore’ and ‘vessel speed’.</li>
+<li>Link to data source: <a href="https://globalfishingwatch.org/datasets-and-code/" class="uri">https://globalfishingwatch.org/datasets-and-code/</a> (accessed on 3/18/2020)</li>
+</ul>
+</div>
+<div id="data-from-the-national-socio-environmental-synthesis-center-sesync-net-primary-productivity-data-csv" class="section level4">
+<h4>Data from the National Socio-Environmental Synthesis Center (SESYNC): Net Primary Productivity Data (CSV)</h4>
+<ul>
+<li>SESYNC’s Marine Socio-Environmental Covariates Shiny App provides oceanographic information based on latitude longitude locations that can be fed into the app. To supplement my longline fishing dataset, I obtained net primary productivity (NPP) data from each vessel observation location in my dataset. Majority of the NPP values lined up with the coordinates I provided, and a portion of the values were interpolated.</li>
+<li>Net primary productivity (NPP) data are reported as average values in milligrams of carbon per meter squared per day (mg C/m<sup>2</sup> day).</li>
+<li>Link to data source: <a href="https://shiny.sesync.org/apps/msec/" class="uri">https://shiny.sesync.org/apps/msec/</a> (accessed on 3/25/2020)</li>
+</ul>
+</div>
 </div>
 <div id="scripts-and-code" class="section level2">
 <h2>Scripts and code</h2>
-<p>Within the ‘Code’ folder: - Wrangling_LonglineData: this script brings the raw data into R for some initial data frame exploration and cleaning. The script transforms the raw longline data to processed longline data by filtering and reformatting columns in order to prepare the data for analysis. More detailed documentation is included throughout the script.</p>
+<p>Within the ‘Code’ folder:</p>
+<ul>
+<li><p>Wrangling_LonglineData.Rmd: This script brings the raw data into R for some initial data frame exploration and cleaning. The script transforms the raw longline data to processed longline data by filtering and reformatting columns in order to prepare the data for analysis. More detailed documentation is included throughout the script.</p></li>
+<li><p>Wrangling_NPP.Rmd: This script transforms the raw NPP data (downloaded from SESYNC) into processed data (fields are put into appropriate formats for exploration and analysis) and joins the NPP data to the processed longline data to make the combined data set.</p></li>
+<li><p>Exploration_Mapping.Rmd: Using mapview and leaflet packages, this script explores the data set at its full extent and focused in on each vessel extent. This mapping script was used as a way to visually explore the different predictor variables and their correlations with fishing activity.</p></li>
+<li><p>Exploration_GLM.Rmd: This script was used for the analysis of the project. The analysis process involved creating a binomial regression model for the predictor variables of fishing activity, running an AIC step analysis to determine the optimal combination of variables, viewing individual variable correlations and outputting model statistics such as AIC values and percent deviance explained. All of these steps were run for the full data set, vessel 1 data and vessel 2 data separately.</p></li>
+</ul>
 </div>
-<div id="metadata" class="section level2">
-<h2>Metadata</h2>
-<p>Longline.csv - mmsi: Anonymized vessel identifier + Values: - Vessel 1 - Vessel 2 - Date: Date (YYYY-MM-DD) + Date range: 2012-06-02 through 2013-12-31 - Time: Time (H:M:S) + Time range: 00:00:38 - 23:59:51 - 24 hour time format - lat: Latitude (decimal degrees) + Range: 7.855130 - 59.72647 - lon: Longitude (decimal degrees) + Range: -178.3234 - -8.751204 - speed: Vessel speed (knots) + Range: 0.0 - 14.4<br />
-- distance_from_shore: Distance from shore (meters) + Range: 0 - 1207965.9 - distance_from_port: Distance from port (meters) + Range: 0 - 1238047.1 - is_fishing: Label indicating fishing activity. + Values: - 0 = Not fishing - 1 = Fishing</p>
+<div id="entity-and-attribute-information-for-processed-data-set" class="section level2">
+<h2>Entity and Attribute information for processed data set:</h2>
+<table>
+<colgroup>
+<col width="25%"></col>
+<col width="25%"></col>
+<col width="25%"></col>
+<col width="25%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>Data Field</th>
+<th>Definition</th>
+<th>Units</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ID</td>
+<td>Unique identifier for observation</td>
+<td>NA</td>
+<td>GFW</td>
+</tr>
+<tr class="even">
+<td>MMSI</td>
+<td>Unique identifier for vessel</td>
+<td>NA</td>
+<td>GFW</td>
+</tr>
+<tr class="odd">
+<td>Date</td>
+<td>Date of observation</td>
+<td>YYYY-MM-DD</td>
+<td>GFW</td>
+</tr>
+<tr class="even">
+<td>Latitude</td>
+<td>Latitude coordinate of observation</td>
+<td>Decimal Degrees</td>
+<td>GFW</td>
+</tr>
+<tr class="odd">
+<td>Longitude</td>
+<td>Longitude coordinate of observation</td>
+<td>Decimal Degrees</td>
+<td>GFW</td>
+</tr>
+<tr class="even">
+<td>Vessel_Speed</td>
+<td>Speed of vessel at observed point</td>
+<td>Knots</td>
+<td>GFW</td>
+</tr>
+<tr class="odd">
+<td>Distance_From_Shore</td>
+<td>Distance vessel is observed from shore</td>
+<td>Meters</td>
+<td>GFW</td>
+</tr>
+<tr class="even">
+<td>NPP_Mean</td>
+<td>Mean net primary productivity value</td>
+<td>mg C/m<sup>2</sup> day</td>
+<td>SESYNC</td>
+</tr>
+<tr class="odd">
+<td>Fishing_Activity</td>
+<td>Indication of whether observed vessel is determined to be fishing (1) or not fishing (0) based on GFW algorithms</td>
+<td>NA</td>
+<td>GFW</td>
+</tr>
+</tbody>
+</table>
 </div>
-<div id="quality-assurancequality-control" class="section level2">
-<h2>Quality assurance/quality control</h2>
-<p><detailed methods and QA QC process will be updated iteratively as project progresses></p>
-<p>&lt;describe any relevant QA/QC procedures taken with your data. Some ideas can be found here:&gt; <a href="https://www.dataone.org/best-practices/develop-quality-assurance-and-quality-control-plan" class="uri">https://www.dataone.org/best-practices/develop-quality-assurance-and-quality-control-plan</a> <a href="https://www.dataone.org/best-practices/ensure-basic-quality-control" class="uri">https://www.dataone.org/best-practices/ensure-basic-quality-control</a> <a href="https://www.dataone.org/best-practices/communicate-data-quality" class="uri">https://www.dataone.org/best-practices/communicate-data-quality</a> <a href="https://www.dataone.org/best-practices/identify-outliers" class="uri">https://www.dataone.org/best-practices/identify-outliers</a> <a href="https://www.dataone.org/best-practices/identify-values-are-estimated" class="uri">https://www.dataone.org/best-practices/identify-values-are-estimated</a></p>
+<div id="quality-and-usage-information" class="section level2">
+<h2>Quality and Usage Information</h2>
+<p>These data have been made accessible for anyone to explore and use, but users should understand the limitations of knowledge based on the level of uncertainty associated with the information. See below for details specific to each data source:</p>
+<ul>
+<li><p>Global Fishing Watch Data: Global Fishing Watch runs raw AIS data through neural networks that have been expertly trained so that the algorithm can distinguish between different types of commercial fishing activities just by analyzing the movement patterns gathered from satellites. Users should be aware that the certainty associated with the fishing activity status (used as the explanatory variable in this analysis) is less than 100%. More information about how the raw AIS data were processed and classified can be found on the source site: <a href="https://globalfishingwatch.org/" class="uri">https://globalfishingwatch.org/</a></p></li>
+<li><p>SESYNC Data: The mean net primary productivity data that was added to the global fishing watch data and used as a predictor variable in models was obtained by feeding coordinates into the SESYNC shiny app and downloading the resulting values associated with these locations. Users should be aware that most of these values line up with the inputted coordinates, and thus return data extracted from 8-day composite layers from 2003-2013 produced by NOAA CoastWatch, but a portion of these values are interpolations due to locations not exactly lining up with inputs. Full methods are documented in the shiny app report: <a href="https://docs.google.com/document/d/1o264v5JS3MTZoOCO2nWOMRh4Z-DMVGZTba6kz9RSj7I/edit" class="uri">https://docs.google.com/document/d/1o264v5JS3MTZoOCO2nWOMRh4Z-DMVGZTba6kz9RSj7I/edit</a>.</p></li>
+</ul>
 </div>
 </div>
 
