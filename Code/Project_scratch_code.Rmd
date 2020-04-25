@@ -157,3 +157,19 @@ plot(Map_Caption)
   
 ```
 
+# colors
+```{r}
+pal <- colorNumeric(c("red", "green", "blue"), 1:10)
+pal(c(1, 6, 9))
+
+
+
+# Create a continuous palette function
+Vpal <- colorNumeric(
+  palette = "viridis",
+  domain = vessel1$NPP_Mean)
+
+vessel1_npp %>%
+  addPolygons(stroke = FALSE, smoothFactor = 0.2, fillOpacity = 1,
+    color = ~Vpal())
+```
